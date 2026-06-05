@@ -19,12 +19,15 @@ void System::showbooks() {
 	for (int i = 0; i < allbook.size(); i++) {
 		std::cout << allbook[i].outid() << "\t" << allbook[i].outBookName() << "\t\n";
 	}
+	/*std::string word = "select count(name，zname),name,zname from book group by name，zname;";
+	MYSQL_RES* result*/
 }
 
 void System::xiuGaiName() {
 	std::cout << "请输入新名字:";
 	std::string name;
 	std::cin >> name;
+	person.setname(name);
 	std::string word = "update person set name=";
 	word += "'";
 	word += name;
@@ -39,6 +42,16 @@ void System::xiuGaisex() {
 	std::cout << "请输入新性别:";
 	std::string sex_;
 	std::cin >> sex_;
+	if (sex_ == "男") {
+		person.setsex(Person::sex::man);
+	}
+	else if (sex_ == "女") {
+		person.setsex(Person::sex::woman);
+	}
+	else {
+		std::cout << "输入格式错误，或者不存在性别" << std::endl;
+		return;
+	}
 	std::string word = "update person set sex=";
 	word += "'";
 	word += sex_;
@@ -53,6 +66,7 @@ void System::xiuGaiAddress() {
 	std::cout << "请输入新地址:";
 	std::string address_;
 	std::cin >> address_;
+	person.setAddRess(address_);
 	std::string word = "update person set address=";
 	word += "'";
 	word += address_;
@@ -67,6 +81,7 @@ void System::xiuGaiPhone() {
 	std::cout << "请输入新电话:";
 	std::string phone_;
 	std::cin >> phone_;
+	person.setPhone(phone_);
 	std::string word = "update person set phone=";
 	word += "'";
 	word += phone_;
@@ -304,56 +319,70 @@ void System::borrowBook() {
 	addbook();
 	system("cls");
 	showbooks();
-	if (allbook.empty()) {
-		std::cout << "书架为空,过段时间再来吧\n";
-		return;
-	}
-	while (1) {
-		std::cout << "请输入你要借阅的书籍\n";
-		std::string book;
-		std::cin >> book;
-		bool one = true;
-		for (int i = 0; i < allbook.size(); i++) {
-			if (allbook[i].outBookName() == book) {
-				one = false;
+	std::cout << "1.开始\n";
+	std::cout << "2.返回\n";
+	int n;
+	std::cin >> n;
+	if (n == 1) {
+		if (allbook.empty()) {
+			std::cout << "书架为空,过段时间再来吧\n";
+			return;
+		}
+		while (1) {
+			std::cout << "请输入你要借阅的书籍\n";
+			std::string book;
+			std::cin >> book;
+			bool one = true;
+			for (int i = 0; i < allbook.size(); i++) {
+				if (allbook[i].outBookName() == book) {
+					one = false;
+					break;
+				}
+			}
+			if (one) {
+				std::cout << "没有该书籍" << std::endl;
+				continue;
+			}
+			std::cout << "请输入书籍编号：";
+			int n;
+			std::cin >> n;
+			bool two = true;
+			for (int i = 0; i < allbook.size(); i++) {
+				if (allbook[i].outid() == n && allbook[i].outBookName() == book) {
+					two = false;
+				}
+			}
+			if (two) {
+				std::cout << "没有该书籍\n";
+				continue;
+			}
+			int day;
+			std::cout << "请输入借阅的天数（不超过7天）\n";
+			std::cin >> day;
+			if (day > 7 || day < 0) {
+				std::cout << "违法行为\n";
 				break;
 			}
-		}
-		if (one) {
-			std::cout << "没有该书籍" << std::endl;
-			continue;
-		}
-		std::cout << "请输入书籍编号：";
-		int n;
-		std::cin >> n;
-		bool two = true;
-		for (int i = 0; i < allbook.size(); i++) {
-			if (allbook[i].outid() == n && allbook[i].outBookName() == book) {
-				two = false;
-			}
-		}
-		if (two) {
-			std::cout << "没有该书籍\n";
-			continue;
-		}
-		int day;
-		std::cout << "请输入借阅的天数（不超过7天）\n";
-		std::cin >> day;
-		if (day > 7||day<0) {
-			std::cout << "违法行为\n";
+			Timestamp now;
+			long long nowtime = now.getNowTimeCuo();
+			long long nexttime = now.addDay(nowtime, day);
+			std::string word1 = "insert into borrowlist(id,bid,dueday,bookname) values(";
+			word1 = word1 + std::to_string(person.outId()) + "," + std::to_string(n) + "," + std::to_string(nexttime) + "," + "'" + book + "'" + ");";
+			MySql::instance().add(word1);
+			std::string word2 = "delete from book where bid=";
+			word2 = word2 + std::to_string(n) + ";";
+			MySql::instance().update(word2);
 			break;
 		}
-		Timestamp now;
-		long long nowtime = now.getNowTimeCuo();
-		long long nexttime = now.addDay(nowtime,day);
-		std::string word1 = "insert into borrowlist(id,bid,dueday,bookname) values(";
-		word1 = word1 + std::to_string(person.outId())+","+std::to_string(n)+","+std::to_string(nexttime)+","+"'"+book+"'"+");";
-		MySql::instance().add(word1);
-		std::string word2 = "delete from book where bid=";
-		word2 = word2 + std::to_string(n) + ";";
-		MySql::instance().update(word2);
-		break;
 	}
+	else if (n == 2) {
+		return;
+	}
+	else {
+		std::cout << "没有该功能" << std::endl;
+		return;
+	}
+
 }
 
 void System::findmybook() {
@@ -379,6 +408,7 @@ void System::findmybook() {
 }
 
 void System::rbook() {
+	system("cls");
 	person.clearbook();
 	std::string word = "select bid,bookname,dueday from borrowlist where id=";
 	word = word + std::to_string(person.outId()) + ";";

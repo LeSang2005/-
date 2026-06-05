@@ -7,10 +7,10 @@ MySql& MySql::instance() {
 MySql::MySql() {
     init = mysql_init(NULL);
     if (mysql_real_connect(init,
-        "localhost",
-        "root",
-        "123456",
-        "systembook",
+        "localhost",//机器名
+        "root",//用户名
+        "123456",//密码
+        "systembook",//库名
         3306,
         nullptr,
         0)) {
