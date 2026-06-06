@@ -49,10 +49,12 @@ void Person::look_Books() {
 	}
 }
 
-bool Person::find_Books(std::string bname,int id) {
+bool Person::find_Books(std::string bname,int id,std::string& write) {
 	for (int i = 0; i < jieYueBooks.size(); i++) {
 		auto it = jieYueBooks[i];
 		if (it.first.outBookName() == bname && it.first.outid() == id) {
+			//std::cout << it.first.outWriter() << "------------" << std::endl;
+			write = it.first.outWriter();
 			return true;
 		}
 	}

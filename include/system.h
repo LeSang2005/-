@@ -20,6 +20,7 @@ public:
 	void borrowBook();
 	void findmybook();
 	void rbook();
+	void fuZhu();
 private:
 	std::string nowperson;
 	System() {

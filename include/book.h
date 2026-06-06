@@ -9,7 +9,10 @@ public:
 	void setname(std::string name);
 	int outid();
 	std::string outBookName();
+	void setZWriter(std::string writer) { this->zWriter = writer; }
+	std::string outWriter() { return zWriter; }
 private:
 	std::string bookName;
+	std::string zWriter;
 	int id;
 };

@@ -1,6 +1,8 @@
 #include"system.h"
 #include"save.h"
 #include"Timestamp.h"
+#include<unordered_map>
+#include<math.h>
 System& System::instance() {
 	static System system_;
 	return system_;
@@ -8,6 +10,7 @@ System& System::instance() {
 
 void System::showbooks() {
 	system("cls");
+	/*system("cls");
 	allbook.clear();
 	addbook();
 	if (allbook.empty()) {
@@ -18,9 +21,51 @@ void System::showbooks() {
 	std::cout << "书籍id\t" << "书籍名称\t\n";
 	for (int i = 0; i < allbook.size(); i++) {
 		std::cout << allbook[i].outid() << "\t" << allbook[i].outBookName() << "\t\n";
+	}*/
+	std::string word = "select count(name), name,zname from book group by name,zname;";
+	MYSQL_RES* result = MySql::instance().query(word);
+	MYSQL_ROW row;
+	std::vector<std::pair<book,int>>books;
+	while ((row = mysql_fetch_row(result))) {
+		book temp_book;
+		int num = atoi(std::string(row[0]).c_str());
+		temp_book.setname(row[1]);
+		//std::cout << row[1] << std::endl;
+		//std::cout << temp_book.outBookName().size() << std::endl;
+		temp_book.setZWriter(row[2]);
+		books.push_back({temp_book,num});
 	}
-	/*std::string word = "select count(name，zname),name,zname from book group by name，zname;";
-	MYSQL_RES* result*/
+	mysql_free_result(result);
+	result = nullptr;
+	std::unordered_map<std::string, int>map;
+	for (int i = 0; i < books.size(); i++) {
+		word = "select count(bookname) from borrowlist where bookname='";
+		word = word + books[i].first.outBookName() + "';";
+		result = MySql::instance().query(word);
+		while ((row = mysql_fetch_row(result))) {
+			map[books[i].first.outBookName()] = atoi(std::string(row[0]).c_str());
+		}
+		mysql_free_result(result);
+		result = nullptr;
+	}
+	std::cout << "书籍名称\t\t\t\t" << "      书籍作者\t" << "书籍剩余数量\t" << "书籍总数量\t\n";
+	for (int i = 0; i < books.size(); i++) {
+		char bookname[31] = {0};
+		auto it = books[i].first.outBookName();
+		if (it.size() >= 30) {
+			std::cout << it << "\n";
+			std::cout << "有超过30字节的书籍名重新设置大小\n"<<it.size();
+			exit(0);
+		}
+		std::copy(it.begin(), it.begin() + min((size_t)10, it.size()), bookname);
+		for (int j = min((size_t)10, it.size()); j < 31;j++) {
+			bookname[j] = ' ';
+		}
+		bookname[30] = '\0';
+		std::cout << bookname<< "\t\t\t" << books[i].first.outWriter() << "\t\t" << books[i].second << "\t\t" << map[books[i].first.outBookName()] + books[i].second << "\t\n";
+	}
+	//mysql_free_result(result);
+	//result = nullptr;
 }
 
 void System::xiuGaiName() {
@@ -303,6 +348,8 @@ bool System::init() {
 }
 
 void System::addbook() {
+	allbook.clear();
+	allbook.resize(0);
 	std::string word = "select * from book;";
 	MYSQL_RES* books = MySql::instance().query(word);
 	MYSQL_ROW row;
@@ -310,15 +357,29 @@ void System::addbook() {
 		book book_temp;
 		book_temp.setid(atoi(row[0]));
 		book_temp.setname(row[1]);
+		book_temp.setZWriter(row[2]);
 		allbook.push_back(book_temp);
+
 	}
 }
+void System::fuZhu() {
+	system("cls");
+		allbook.clear();
+		addbook();
+		if (allbook.empty()) {
+			std::cout << "书架为空，过段时间再来吧！\n";
+			return;
 
+		}
+		std::cout << "书籍id\t" << "书籍名称\t"<<"书籍作者\t\n";
+		for (int i = 0; i < allbook.size(); i++) {
+			std::cout << allbook[i].outid() << "\t" << allbook[i].outBookName() << "\t"<<allbook[i].outWriter()<<"\t\n";
+		}
+}
 void System::borrowBook() {
 	allbook.clear();
-	addbook();
 	system("cls");
-	showbooks();
+	fuZhu();
 	std::cout << "1.开始\n";
 	std::cout << "2.返回\n";
 	int n;
@@ -332,9 +393,11 @@ void System::borrowBook() {
 			std::cout << "请输入你要借阅的书籍\n";
 			std::string book;
 			std::cin >> book;
+			std::string writer;
 			bool one = true;
 			for (int i = 0; i < allbook.size(); i++) {
 				if (allbook[i].outBookName() == book) {
+					writer = allbook[i].outWriter();
 					one = false;
 					break;
 				}
@@ -366,8 +429,8 @@ void System::borrowBook() {
 			Timestamp now;
 			long long nowtime = now.getNowTimeCuo();
 			long long nexttime = now.addDay(nowtime, day);
-			std::string word1 = "insert into borrowlist(id,bid,dueday,bookname) values(";
-			word1 = word1 + std::to_string(person.outId()) + "," + std::to_string(n) + "," + std::to_string(nexttime) + "," + "'" + book + "'" + ");";
+			std::string word1 = "insert into borrowlist(id,bid,dueday,bookname,zname) values(";
+			word1 = word1 + std::to_string(person.outId()) + "," + std::to_string(n) + "," + std::to_string(nexttime) + "," + "'" + book + "'" +","+"'"+writer+"'" + ");";
 			MySql::instance().add(word1);
 			std::string word2 = "delete from book where bid=";
 			word2 = word2 + std::to_string(n) + ";";
@@ -410,7 +473,7 @@ void System::findmybook() {
 void System::rbook() {
 	system("cls");
 	person.clearbook();
-	std::string word = "select bid,bookname,dueday from borrowlist where id=";
+	std::string word = "select bid,bookname,dueday,zname from borrowlist where id=";
 	word = word + std::to_string(person.outId()) + ";";
 	MYSQL_RES* result = MySql::instance().query(word);
 	MYSQL_ROW row;
@@ -419,6 +482,8 @@ void System::rbook() {
 		b.setid(atoi(std::string(row[0]).c_str()));
 		b.setname(std::string(row[1]));
 		long long time = atol(std::string(row[2]).c_str());
+		b.setZWriter(std::string(row[3]));
+		//std::cout << row[3] << std::endl;
 		person.addP_Book(b, time);
 	}
 	person.look_Books();
@@ -433,12 +498,14 @@ void System::rbook() {
 	std::cout << "请输入需要还书的编号:";
 	int m;
 	std::cin >> m;
-	if (!person.find_Books(b_name, m)) {
+	std::string writer_;
+	if (!person.find_Books(b_name, m,writer_)) {
 		std::cout << "还书失败，不存在这本书\n";
 		return;
 	}
-	std::string word2 = "insert into book(bid,name) values(";
-	word2 = word2 + std::to_string(m) + ",'" + b_name+"');";
+	//std::cout << "作者名：" <<writer_<< std::endl;
+	std::string word2 = "insert into book(bid,name,zname) values(";
+	word2 = word2 + std::to_string(m) + ",'" + b_name+"','"+writer_+ "');";
 	MySql::instance().add(word2);
 	std::string word3 = "delete from borrowlist where id=";
 	word3 = word3 + std::to_string(person.outId())+" and "+"bid="+std::to_string(m) + ";";

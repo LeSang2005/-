@@ -19,7 +19,7 @@ public:
 	void clearbook();
 	void addP_Book(book b,long long time);
 	void look_Books();
-	bool find_Books(std::string bname,int bid);
+	bool find_Books(std::string bname,int bid, std::string& write);
 	bool has_books();
     enum sex {
 		man = 0,
